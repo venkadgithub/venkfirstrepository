@@ -1,3 +1,4 @@
+#scripted file
 pipeline {
     agent any
     environment {
