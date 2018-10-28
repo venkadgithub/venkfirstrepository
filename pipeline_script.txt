@@ -1,0 +1,58 @@
+node {
+    stage('SCM Checkout') {
+        git 'https://github.com/venkadgithub/venkfirstrepository'
+    }
+    stage('Maven Clean and Package'){
+        def mvnHome = tool name: 'maven-3', type: 'maven'
+        def mvnCmd = "${mvnHome}/bin/mvn"
+        sh "${mvnCmd} clean package"
+    }
+    stage('Build Docker Image, Push, Run'){
+        withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+            sh "docker login -u venkatdockercloud -p ${dockerHubPwd}"
+            sh 'docker build -t venkatdockercloud/java-mvn-app:1.0.0 .'
+            sh 'docker push venkatdockercloud/java-mvn-app:1.0.0'
+            sh 'docker run -p 8081:8081 -d venkatdockercloud/java-mvn-app:1.0.0'
+        }
+    }
+}
+
+
+
+
+
+pipeline {
+    agent any
+    environment {
+        mvnHome = tool name: 'maven-3', type: 'maven'
+        mvnCmd = "${mvnHome}/bin/mvn"
+    }
+    stages {
+        stage('SCM Checkout') {
+            steps{
+                git 'https://github.com/venkadgithub/venkfirstrepository'
+            }
+        }
+        stage('Maven Clean and Package'){
+            steps{
+                sh "${mvnCmd} clean package"
+            }
+        }
+        stage('Build Docker Image, Push, Run'){
+            steps {
+                withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+                    sh "docker login -u venkatdockercloud -p ${dockerHubPwd}"
+                    sh 'docker build -t venkatdockercloud/java-mvn-app:1.0.0 .'
+                    sh 'docker push venkatdockercloud/java-mvn-app:1.0.0'
+                    sh 'docker run -p 8081:8081 -d venkatdockercloud/java-mvn-app:1.0.0'
+                }
+            }
+            post {
+                success {
+                    mail bcc: '', body: 'Build Success', cc: '', from: '', replyTo: '', subject: 'Build Success', to: 'skvenkadesan@gmail.com'        
+                }
+            }
+        }
+        
+    }
+}
